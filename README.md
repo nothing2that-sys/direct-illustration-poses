@@ -6,7 +6,7 @@
 
 ## 설치
 
-Python 3.10 이상과 Codex가 필요합니다. 추가 Python 패키지나 API 키, 개인 Drive 연결은 필요하지 않습니다.
+Python 3.10 이상과 Codex가 필요합니다. 추가 Python 패키지나 API 키는 필요하지 않습니다.
 
 ```sh
 git clone https://github.com/nothing2that-sys/direct-illustration-poses.git
@@ -58,7 +58,7 @@ $direct-illustration-poses 이 동상 사진의 외형과 청동 질감을 유�
 포즈 자료나 자세 설명으로 진행하고, 실제 사용한 참조를 알려 줘.
 ```
 
-허용된 외부 포즈를 사용하려면 이미지를 확인한 뒤 준비 명령에 `--pose-source external --source-url <원본페이지> --rights-note "<확인한 허락·용도>"`를 추가하세요. 사용자 제공 로컬/Drive 이미지는 `--pose-source user`로 표시합니다. 갤러리 외부 자료는 PNG·JPEG·WebP를 지원합니다.
+허용된 외부 포즈를 사용하려면 이미지를 확인한 뒤 준비 명령에 `--pose-source external --source-url <원본페이지> --rights-note "<확인한 허락·용도>"`를 추가하세요. 사용자 제공 로컬 이미지는 `--pose-source user`로 표시합니다. 갤러리 외부 자료는 PNG·JPEG·WebP를 지원합니다.
 
 이미지 없이 자세 설명으로 준비할 수도 있습니다. 아래 명령은 인터넷에 접속하거나 포즈 이미지를 다운로드하지 않습니다.
 
@@ -81,3 +81,9 @@ python -m unittest discover -s tests -v
 ```
 
 한국어 검색 확장, HTML 목록 파싱, 외부 이미지 URL 거부, 검색 시 이미지 요청 없음, 단일 파일 취득, 기존 파일 보존, 참조 준비를 검사합니다. 사이트 구조·가용성은 변경될 수 있습니다. 파싱 실패 시 자동 우회하지 않고 브라우저에서 선택·다운로드하거나 직접 받은 파일을 사용합니다. 이미지 생성 모델·브라우저 도구는 별도 환경에서 제공되어야 합니다.
+
+## 고도화된 웹 검색 (v1.2.0)
+
+모호한 설명을 자세 개념으로 확장하고 일치·누락 조건을 표시합니다. 입력 이미지를 Codex가 먼저 실제로 관찰한 뒤 특징 JSON으로 검색할 수 있습니다. 검색 스크립트 자체는 이미지 유사도 모델이 아닙니다. 표준 1인 분류를 기본으로 하고 같은 포즈의 앵글을 묶어 상위 5개만 반환합니다. 선택 ID의 show에서 원본 링크를 얻습니다.
+
+`$direct-illustration-poses 이 이미지와 비슷한 자세를 웹에서 찾아줘` 또는 `$direct-illustration-poses 이 캐릭터를 기운 없이 축 처진 자세로 그려줘`처럼 요청하세요. 찾기 요청은 후보 안내까지, 생성 요청은 실제 확인한 참조파일을 생성 도구에 전달합니다. 입력 특징 형식은 [검색 안내](skills/direct-illustration-poses/references/advanced-search.md)를 참고하세요.
