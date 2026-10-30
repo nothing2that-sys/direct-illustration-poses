@@ -1,0 +1,6 @@
+interface:
+  display_name: "포즈 참조 삽화 제작"
+  short_description: "웹 포즈를 찾아 실제 참조파일로 삽화·이미지를 생성하고 자세를 편집합니다"
+  default_prompt: "$create-pose-illustration 장면에 맞는 웹 포즈를 찾아 실제 이미지를 확인한 뒤, 캐릭터 기준 이미지와 함께 참조해 삽화를 만들어 줘."
+policy:
+  allow_implicit_invocation: true
