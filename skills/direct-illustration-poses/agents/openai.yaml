@@ -1,6 +1,6 @@
 interface:
   display_name: "삽화 포즈 디렉터"
-  short_description: "모호한 설명·입력 이미지로 웹 포즈·구도를 찾고 요청 시 생성에 연결합니다"
-  default_prompt: "$direct-illustration-poses로 장면에 맞는 포즈를 찾아 실제 이미지를 확인하고 참조파일까지만 준비해 줘."
+  short_description: "모호한 설명·입력 이미지로 웹 포즈를 찾아 확인하고 참조파일을 반환합니다"
+  default_prompt: "$direct-illustration-poses 이 장면이나 입력 이미지에 맞는 웹 포즈를 찾아 실제 이미지를 확인하고 후보와 참조파일을 알려 줘. 생성은 하지 마."
 policy:
   allow_implicit_invocation: true
