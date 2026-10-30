@@ -1,0 +1,6 @@
+interface:
+  display_name: "삽화 포즈 디렉터"
+  short_description: "웹 포즈·포징·자세·구도를 검색하고 한 장의 이미지 참조를 준비합니다"
+  default_prompt: "$direct-illustration-poses로 장면에 맞는 포즈를 찾아 실제 이미지를 확인하고 참조파일까지만 준비해 줘."
+policy:
+  allow_implicit_invocation: true
