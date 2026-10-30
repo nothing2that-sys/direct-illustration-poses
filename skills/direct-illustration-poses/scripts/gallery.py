@@ -15,20 +15,8 @@ DEFAULT_CACHE = Path.home() / '.cache' / 'direct-illustration-poses' / 'gallery.
 LINES = {'standard': '全身1人・標準系', 'upper': '上半身1人',
          'pair': '2人絡み', 'sexy': '全身1人・セクシー系'}
 ANGLES = {'front': '正面', 'high': '上から', 'low': '下から', 'side': '横', 'diag': '斜め'}
-# These are search suggestions, not verified descriptions of every pose.
-ALIASES = [
-    (('앉', 'sitting', 'sit', '의자', 'chair'), ('座', '腰掛', '椅子')),
-    (('고민', '생각', '턱', 'thinking', 'worried'), ('頬杖', '顎', '頬に手')),
-    (('서서', '서있', 'standing'), ('立ち', '立って')),
-    (('눕', '누워', 'lying'), ('寝', '仰向け', 'うつ伏せ')),
-    (('무릎', 'kneel'), ('膝',)),
-    (('달리', '뛰는', 'running'), ('走',)),
-    (('걷', 'walking'), ('歩',)),
-    (('검', 'sword'), ('剣',)),
-    (('싸움', '격투', 'fight'), ('戦', 'パンチ', '格闘')),
-    (('포옹', '껴안', 'hug'), ('抱', 'ハグ')),
-    (('손', 'hand'), ('手',)),
-]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pose_search import rank
 
 
 def output(data):
@@ -46,7 +34,7 @@ def site_url(relative):
 
 
 def request_bytes(url, limit):
-    req = Request(url, headers={'User-Agent': 'direct-illustration-poses/1.1', 'Accept': '*/*'})
+    req = Request(url, headers={'User-Agent': 'direct-illustration-poses/1.2', 'Accept': '*/*'})
     with urlopen(req, timeout=30) as response:
         # Do not follow a site change to an unrelated host silently.
         site_url(response.url)
@@ -98,26 +86,8 @@ def describe(row):
             'preview_url': site_url(row['サムネ']), 'original_url': site_url(row['原寸'])}
 
 
-def search_rows(rows, query, line=None, angle=None, limit=6):
-    query = query.casefold()
-    tokens = re.findall(r'[\w-]+', query)
-    expansions = [targets for triggers, targets in ALIASES if any(t in query for t in triggers)]
-    results = []
-    for row in rows:
-        if line and row['系統'] != LINES[line]:
-            continue
-        if angle and row['アングル'] != ANGLES[angle]:
-            continue
-        text = ' '.join(row[k] for k in ('id', 'ポーズ名', '分類')).casefold()
-        score = sum(5 for token in tokens if token in text)
-        score += sum(3 for terms in expansions if any(term in text for term in terms))
-        if query and score == 0:
-            continue
-        results.append(dict(describe(row), score=score))
-    results.sort(key=lambda r: (-r['score'], r['id']))
-    return {'query': query, 'matches': len(results), 'results': results[:limit],
-            'images_downloaded': 0,
-            'notice': 'Keyword suggestions only. Open preview and original; verify props and pose visually.'}
+def search_rows(rows, query, line=None, angle=None, limit=5, features=None, exclude='', details=False):
+    return rank(rows, query, line, angle, limit, describe, LINES, ANGLES, features, exclude, details)
 
 
 def select(rows, image_id):
@@ -204,7 +174,7 @@ def prepare(args):
               '손가락·관절·소품 접촉·바닥 접지·인원수를 확인한다.\n'
               '작품 제약: ' + (args.constraints or '작품 기준 자료로 확정 필요') + '\n')
     if not copies:
-        prompt += '캐릭터 기준 이미지 미제공: 외형·의상·장비 확정 전 생성 대기.\n'
+        prompt += '캐릭터 기준 이미지 미제공: 특정 외형 유지는 미확정이며 일반 인물은 장면 설명으로 디자인한다.\n'
     manifest = {'pose_id': args.pose_id, 'source_page': SITE if source_kind == 'gallery' else source_url,
                 'pose_source': source_kind, 'pose_mode': 'image' if pose else 'description',
                 'reference_mode': source_kind + '_image' if pose else 'description_only',
@@ -238,10 +208,13 @@ def main():
     parser.add_argument('--refresh', action='store_true')
     sub = parser.add_subparsers(dest='command', required=True)
     s = sub.add_parser('search', help='Search text metadata; downloads no images')
-    s.add_argument('query')
+    s.add_argument('query', nargs='?', default='')
     s.add_argument('--line', choices=LINES)
     s.add_argument('--angle', choices=ANGLES)
-    s.add_argument('--limit', type=int, default=6)
+    s.add_argument('--limit', type=int, default=5)
+    s.add_argument('--features', type=Path, help='Observed pose features JSON')
+    s.add_argument('--exclude', default='')
+    s.add_argument('--details', action='store_true')
     for name in ('show', 'fetch'):
         p = sub.add_parser(name)
         p.add_argument('image_id')
@@ -270,7 +243,10 @@ def main():
         if args.command == 'search':
             if not 1 <= args.limit <= 30:
                 raise ValueError('--limit must be between 1 and 30')
-            output(search_rows(rows, args.query, args.line, args.angle, args.limit))
+            features = json.loads(args.features.read_text(encoding='utf-8-sig')) if args.features else None
+            if not args.query.strip() and not features:
+                raise ValueError('Provide query or --features')
+            output(search_rows(rows, args.query, args.line, args.angle, args.limit, features, args.exclude, args.details))
         elif args.command == 'show':
             output(describe(select(rows, args.image_id)))
         else:
