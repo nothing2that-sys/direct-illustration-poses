@@ -46,7 +46,7 @@ def site_url(relative):
 
 
 def request_bytes(url, limit):
-    req = Request(url, headers={'User-Agent': 'direct-illustration-poses/1.0', 'Accept': '*/*'})
+    req = Request(url, headers={'User-Agent': 'direct-illustration-poses/1.1', 'Accept': '*/*'})
     with urlopen(req, timeout=30) as response:
         # Do not follow a site change to an unrelated host silently.
         site_url(response.url)
@@ -156,12 +156,30 @@ def download_one(row, kind, out):
 
 
 def prepare(args):
-    source = args.pose_file.expanduser().resolve(strict=True)
-    info = image_info(source.read_bytes())
-    if info['type'] != 'png':
-        raise ValueError('Use the original PNG, not a preview')
-    if not re.fullmatch(r'[A-Za-z0-9_-]+', args.pose_id):
+    description = (getattr(args, 'pose_description', None) or '').strip()
+    if bool(args.pose_file) == bool(description):
+        raise ValueError('Choose exactly one pose image or pose description')
+    source_kind = getattr(args, 'pose_source', None) or ('gallery' if args.pose_file else 'text')
+    if (source_kind == 'text') != bool(description):
+        raise ValueError('Text source requires --pose-description; image sources require --pose-file')
+    if description and args.pose_id:
+        raise ValueError('Description mode has no pose image ID; omit --pose-id')
+    source_url = getattr(args, 'source_url', None)
+    rights_note = getattr(args, 'rights_note', None)
+    if source_kind == 'external' and (not source_url or not rights_note):
+        raise ValueError('External images require --source-url and --rights-note')
+    if source_url:
+        parsed = urlsplit(source_url)
+        if parsed.scheme not in ('https', 'http') or not parsed.netloc or parsed.username or parsed.password:
+            raise ValueError('Use a public source page URL without credentials')
+    if args.pose_id and not re.fullmatch(r'[A-Za-z0-9_-]+', args.pose_id):
         raise ValueError('Invalid pose ID')
+    if source_kind == 'gallery' and not args.pose_id:
+        raise ValueError('Gallery images require --pose-id')
+    source = args.pose_file.expanduser().resolve(strict=True) if args.pose_file else None
+    info = image_info(source.read_bytes()) if source else None
+    if source_kind == 'gallery' and info['type'] != 'png':
+        raise ValueError('Use the original gallery PNG, not a preview')
     characters = [p.expanduser().resolve(strict=True) for p in args.character]
     for file in characters:
         image_info(file.read_bytes())
@@ -169,31 +187,43 @@ def prepare(args):
     if out.exists():
         raise ValueError('Output exists; choose a new directory')
     out.mkdir(parents=True)
-    pose = out / (args.pose_id + '.png')
-    shutil.copy2(source, pose)
+    pose = out / ((args.pose_id or 'pose-reference') + '.' + info['type']) if source else None
+    if pose:
+        shutil.copy2(source, pose)
     copies = []
     for index, file in enumerate(characters, 1):
         ext = image_info(file.read_bytes())['type']
         dest = out / ('character-%02d.' % index + ext)
         shutil.copy2(file, dest)
         copies.append(str(dest))
+    pose_instruction = ('포즈 참조 이미지는 자세·카메라 구도만 결정하며 외형은 복제하지 않는다. '
+                        if pose else '포즈 이미지는 사용하지 않는다. 자세 설명만 적용한다: ' + description + '\n')
     prompt = ('장면: ' + args.scene + '\n'
-              '캐릭터 기준 이미지는 얼굴·외형·의상·장비를 결정한다. '
-              '포즈 ' + args.pose_id + '는 자세·카메라 구도만 결정한다. '
-              '포즈 마네킹의 외형은 복제하지 않는다. 작품의 인물 기준 좌우 손·장비 위치를 유지한다. '
+              '캐릭터 기준 이미지는 얼굴·외형·의상·장비·재질을 결정한다. '
+              + pose_instruction + '작품의 인물 기준 좌우 손·장비 위치를 유지한다. '
               '손가락·관절·소품 접촉·바닥 접지·인원수를 확인한다.\n'
               '작품 제약: ' + (args.constraints or '작품 기준 자료로 확정 필요') + '\n')
     if not copies:
         prompt += '캐릭터 기준 이미지 미제공: 외형·의상·장비 확정 전 생성 대기.\n'
-    manifest = {'pose_id': args.pose_id, 'source_page': SITE,
-                'pose_file': str(pose), 'character_files': copies,
-                'sha256': hashlib.sha256(pose.read_bytes()).hexdigest(),
+    manifest = {'pose_id': args.pose_id, 'source_page': SITE if source_kind == 'gallery' else source_url,
+                'pose_source': source_kind, 'pose_mode': 'image' if pose else 'description',
+                'reference_mode': source_kind + '_image' if pose else 'description_only',
+                'pose_description': description or None,
+                'pose_file': str(pose) if pose else None, 'character_files': copies,
+                'sha256': hashlib.sha256(pose.read_bytes()).hexdigest() if pose else None,
+                'rights_note': rights_note,
+                'fallback_reason': getattr(args, 'fallback_reason', None),
                 'status': 'references_prepared' if copies else 'needs_character_reference',
-                'visual_review': 'not_recorded; caller must actually open both reference roles',
-                'generation_executed': False, 'redistribution_allowed': False}
-    request = {'ready': False, 'requires': ['actual visual review', 'explicit generation request'],
-               'arguments': {'prompt': prompt, 'referenced_image_paths': [*copies, str(pose)],
-                             'transparent_background': False}}
+                'visual_review': ('not_recorded; open actual input images' if pose else
+                                  'no pose image used; caller must review any character/edit-target images'),
+                'generation_executed': False,
+                'redistribution_allowed': False if source_kind == 'gallery' else None}
+    references = [*copies, *([str(pose)] if pose else [])]
+    arguments = {'prompt': prompt, 'transparent_background': False}
+    if references:
+        arguments['referenced_image_paths'] = references
+    request = {'ready': False, 'requires': ['actual input image review' if references else 'scene and pose review',
+                                           'explicit generation request'], 'arguments': arguments}
     for name, value in [('reference-manifest.json', manifest), ('imagegen-request.json', request)]:
         (out / name).write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding='utf-8')
     (out / 'prompt.txt').write_text(prompt, encoding='utf-8')
@@ -219,8 +249,14 @@ def main():
             p.add_argument('--kind', choices=('preview', 'original'), required=True)
             p.add_argument('--out', type=Path, required=True)
     p = sub.add_parser('prepare', help='Prepare local references; never generates images')
-    p.add_argument('--pose-file', type=Path, required=True)
-    p.add_argument('--pose-id', required=True)
+    pose_input = p.add_mutually_exclusive_group(required=True)
+    pose_input.add_argument('--pose-file', type=Path)
+    pose_input.add_argument('--pose-description', help='Continue with a written pose; no pose image is used')
+    p.add_argument('--pose-id')
+    p.add_argument('--pose-source', choices=('gallery', 'external', 'user', 'text'))
+    p.add_argument('--source-url', help='Public source page for an alternative pose image')
+    p.add_argument('--rights-note', help='Observed permission/license and applicable use, not a new grant')
+    p.add_argument('--fallback-reason', help='Why the original gallery was not used')
     p.add_argument('--character', type=Path, action='append', default=[])
     p.add_argument('--scene', required=True)
     p.add_argument('--constraints', default='')
