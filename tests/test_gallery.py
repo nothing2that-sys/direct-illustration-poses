@@ -26,6 +26,35 @@ def row(image_id='example_P001_front', name='座り・頬杖'):
 
 
 class GalleryTests(unittest.TestCase):
+    def test_vague_queries_rank_posture_combinations(self):
+        r=gallery.search_rows([row('a_front','前かがみ・腕をだらりと下げる'),row('b_front','座り・頬杖')], '기운 없이 축 처진')
+        self.assertEqual(r['results'][0]['id'],'a_front')
+        self.assertIn('피로',r['results'][0]['scene_inferences'])
+        self.assertFalse(r['results'][0]['image_verified'])
+        r=gallery.search_rows([row()], '의자에 앉아서 머리가 복잡한 느낌')
+        self.assertIn('의자',r['results'][0]['missing'])
+        self.assertIn('고민',r['results'][0]['matched'])
+
+    def test_image_features_exclude_uncertain_traits_and_support_filters(self):
+        features={'posture':'앉기','hands':'뺨 괴기','camera':'정면','people':1,'uncertain':['의자'],'exclude':['팔짱']}
+        r=gallery.search_rows([row(),row('b_side','腕組み・座り')], '',features=features)
+        self.assertEqual(r['angle_filter'],'front')
+        self.assertNotIn('의자',r['interpreted'])
+        self.assertEqual(len(r['results']),1)
+        with self.assertRaises(ValueError): gallery.search_rows([row()], '',features={'people':3})
+        with self.assertRaises(ValueError): gallery.search_rows([row()], '',features={'image_path':'not-a-vision-model.png'})
+
+    def test_default_standard_grouping_compact_and_pair_routing(self):
+        duplicate=row('same_side');duplicate['アングル']='横'
+        adult=row('adult_front');adult['系統']=gallery.LINES['sexy']
+        pair=row('pair_front','抱き合う');pair['系統']=gallery.LINES['pair']
+        r=gallery.search_rows([row(),duplicate,adult,pair],'앉기')
+        self.assertEqual(r['matches'],1)
+        self.assertNotIn('original_url',r['results'][0])
+        r=gallery.search_rows([pair],'둘이 포옹')
+        self.assertEqual(r['line'],'pair')
+        self.assertEqual(r['results'][0]['id'],'pair_front')
+
     def test_parse_site_data_without_executing_javascript(self):
         data = [row()]
         html = '<script>const D=' + json.dumps(data) + ';throw new Error("do not execute");</script>'
