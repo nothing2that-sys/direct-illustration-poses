@@ -7,7 +7,7 @@
 | `direct-illustration-poses` · 삽화 포즈 디렉터 | 모호한 장면 설명이나 입력 이미지의 자세를 분석해 웹 레퍼런스를 찾고 실제 이미지를 확인해 반환합니다. 생성하지 않습니다. |
 | `create-pose-illustration` · 포즈 참조 삽화 제작 | 검색 스킬로 포즈를 찾고 실제 PNG와 캐릭터 기준 이미지를 참조해 그림을 생성하거나 자세를 편집합니다. |
 
-기본 출처는 [AI Pose Gallery](https://ai-pose-gallery.pages.dev/)입니다. 조건에 맞지 않거나 자료가 없으면 다른 허용된 웹 자료 또는 자세 설명으로 이어갑니다. 이미지와 개인 자료는 이 저장소에 포함하지 않습니다.
+포즈 이미지 검색·취득 출처는 **[AI Pose Gallery](https://ai-pose-gallery.pages.dev/) 하나로 한정**합니다. 전체 웹 검색을 하지 않습니다. 자료가 없으면 이를 알리고, 생성 요청은 포즈 이미지 없이 일반 자세 설명으로 이어갈 수 있습니다. 이미지와 개인 자료는 이 저장소에 포함하지 않습니다.
 
 ## 설치
 
@@ -36,7 +36,7 @@ $create-pose-illustration 이 이미지의 외형과 의상은 유지하고 쪼�
 
 ## 검색 인덱스
 
-기존 태깅의 동의어를 개인정보 없는 [검색 어휘](skills/direct-illustration-poses/assets/query-synonyms.json)로 재사용합니다. [웹 관찰 태그](skills/direct-illustration-poses/assets/verified-web-poses.json)는 실제로 확인한 **웹 이미지 6개 ID**에만 연결했습니다. 원본 번호와 웹 번호의 동일성을 가정하지 않으며, 전체 기존 1,001개 항목의 이미지 일치가 검증된 것은 아닙니다. 다른 앵글에도 관찰 태그를 자동 복사하지 않습니다.
+[검색 어휘](skills/direct-illustration-poses/assets/query-synonyms.json)는 갤러리의 이름·분류와 연결하는 자세 개념의 한글·영어 표현입니다. 다른 자료의 목록·인덱스·번호 대응은 사용하지 않습니다. [웹 관찰 태그](skills/direct-illustration-poses/assets/verified-web-poses.json)는 갤러리에서 직접 확인한 이미지 6개 ID에만 연결합니다. 다른 앵글로 자동 복사하지 않습니다.
 
 실행 시 웹 텍스트 목록을 읽고 로컬에서 검색합니다. 등록된 관찰 태그가 없는 웹 이미지도 원본 이름·분류와 동의어로 후보를 찾습니다. 검색은 전체 목록을 모델에 전달하지 않고 상위 5개 후보만 출력하며 같은 포즈의 앵글을 묶습니다. `matched`와 `missing`을 구분해 의자 같은 소품이 없는 후보를 정확한 일치로 보고하지 않습니다. 태그를 찾았다는 사실과 실제 이미지를 열어 봤다는 사실도 구분합니다.
 
