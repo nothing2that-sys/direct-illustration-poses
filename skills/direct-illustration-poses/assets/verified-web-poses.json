@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "source": "https://ai-pose-gallery.pages.dev/",
+  "poses": [
+    {
+      "id": "full_single_P015_front",
+      "observed_tags": [
+        "한손허리",
+        "체중한쪽",
+        "다리벌림",
+        "정면"
+      ],
+      "concepts": [
+        "서기",
+        "허리손"
+      ],
+      "review_level": "preview_observed",
+      "review_date": "2026-10-30",
+      "preview_sha256": "684d23afefd1b05020a7690168d6cb74a891a5fe477735fba722c88ea3f3d6dd",
+      "exact_source_image_identity": "not_established",
+      "note": "웹 이미지를 직접 확인한 자세 태그. 다른 번호·앵글로 전파하지 않음."
+    },
+    {
+      "id": "full_single_P020_front",
+      "observed_tags": [
+        "한손뒷머리",
+        "한손허리",
+        "체중한쪽",
+        "정면"
+      ],
+      "concepts": [
+        "서기",
+        "머리손",
+        "허리손"
+      ],
+      "review_level": "preview_observed",
+      "review_date": "2026-10-30",
+      "preview_sha256": "08daa97ef98d9246859ba9c6ff2e9775e77bf2219de0df250d432f43c32595d6",
+      "exact_source_image_identity": "not_established",
+      "note": "웹 이미지를 직접 확인한 자세 태그. 다른 번호·앵글로 전파하지 않음."
+    },
+    {
+      "id": "full_single_P067_front",
+      "observed_tags": [
+        "상체앞숙임",
+        "양손무릎",
+        "고개숙임",
+        "다리벌림",
+        "정면"
+      ],
+      "concepts": [
+        "서기",
+        "숙이기"
+      ],
+      "review_level": "preview_observed",
+      "review_date": "2026-10-30",
+      "preview_sha256": "e5d67c5838291d458bdef2d8a6c8b9466bac0cba8206aa01090785eeca19b7b5",
+      "exact_source_image_identity": "not_established",
+      "note": "웹 이미지를 직접 확인한 자세 태그. 다른 번호·앵글로 전파하지 않음."
+    },
+    {
+      "id": "full_single_P050_front",
+      "observed_tags": [
+        "옆으로눕기",
+        "한손머리받침",
+        "한손허리",
+        "다리모음"
+      ],
+      "concepts": [
+        "눕기",
+        "옆으로눕기",
+        "기대기"
+      ],
+      "review_level": "preview_observed",
+      "review_date": "2026-10-30",
+      "preview_sha256": "105ce6ad17762dde75d57b7a6bebd1b9198664148e33b52d2a9ecf84ef3ce896",
+      "exact_source_image_identity": "not_established",
+      "note": "웹 이미지를 직접 확인한 자세 태그. 다른 번호·앵글로 전파하지 않음."
+    },
+    {
+      "id": "full_single_P012_front",
+      "observed_tags": [
+        "바닥앉기",
+        "한무릎세움",
+        "한손뺨",
+        "한손바닥짚기",
+        "한쪽다리앞으로뻗기",
+        "정면"
+      ],
+      "concepts": [
+        "앉기",
+        "한무릎세움",
+        "턱뺨받침",
+        "바닥손",
+        "다리뻗기"
+      ],
+      "review_level": "original_observed",
+      "review_date": "2026-10-30",
+      "preview_sha256": "7bd356566c8c87f597470a69c5d012c4fd15484a8aecb6d8e0aef26b24e86aa2",
+      "exact_source_image_identity": "not_established",
+      "note": "웹 이미지를 직접 확인한 자세 태그. 다른 번호·앵글로 전파하지 않음."
+    },
+    {
+      "id": "full_single_P063_side",
+      "observed_tags": [
+        "쪼그리기",
+        "한손턱",
+        "팔꿈치무릎지지",
+        "발바닥접지",
+        "측면"
+      ],
+      "concepts": [
+        "쪼그리기",
+        "턱뺨받침"
+      ],
+      "review_level": "original_observed",
+      "review_date": "2026-10-30",
+      "preview_sha256": "751e88cb4d9caebacb1c80f75a94818d0b1b25f60dd576614b0269af9b3d4d77",
+      "exact_source_image_identity": "not_established",
+      "note": "웹 이미지를 직접 확인한 자세 태그. 다른 번호·앵글로 전파하지 않음."
+    }
+  ]
+}
