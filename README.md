@@ -50,7 +50,7 @@ python install.py
 
 기본 설치 위치는 현재 사용자의 `~/.agents/skills`이며 **두 스킬을 함께 설치**합니다. 기존 동명 스킬이 하나라도 있으면 덮어쓰지 않고 중단합니다. 업데이트할 때는 기존 두 폴더를 스킬 검색 경로 밖에 백업한 뒤 설치하세요.
 
-Git을 쓰지 않는다면 [최신 배포본](https://github.com/nothing2that-sys/direct-illustration-poses/releases/latest)의 **Source code (zip)**을 받아 압축을 풀고, `install.py`가 있는 폴더에서 `python install.py`를 실행하세요. 설치 위치를 직접 정하려면 `python install.py --skills-dir <사용자 스킬 폴더>`를 사용합니다.
+Git을 쓰지 않는다면 [현재 버전 ZIP 받기](https://github.com/nothing2that-sys/direct-illustration-poses/archive/refs/heads/main.zip)를 눌러 압축을 풀고, `install.py`가 있는 폴더에서 `python install.py`를 실행하세요. 설치 위치를 직접 정하려면 `python install.py --skills-dir <사용자 스킬 폴더>`를 사용합니다.
 
 ## 2. 설치가 됐는지 확인하기
 
