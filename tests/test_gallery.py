@@ -102,6 +102,86 @@ class GalleryTests(unittest.TestCase):
             self.assertEqual(retry.returncode, 2)
             self.assertEqual(custom.read_text(encoding='utf-8'), 'keep')
 
+    def test_description_fallback_keeps_only_actual_character_and_uses_no_network(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            temp = pathlib.Path(tmp)
+            target = temp/'statue.png'
+            target.write_bytes(PNG)
+            args = argparse.Namespace(pose_file=None, pose_id=None, pose_description='한 발로 서서 두 손을 모은다',
+                                      character=[target], scene='청동 동상의 나무 자세', constraints='청동 질감 유지',
+                                      fallback_reason='갤러리 조건 불일치', out=temp/'prepared')
+            with patch.object(gallery, 'request_bytes') as request:
+                result = gallery.prepare(args)
+                request.assert_not_called()
+            self.assertEqual(result['reference_mode'], 'description_only')
+            self.assertIsNone(result['pose_file'])
+            self.assertIsNone(result['pose_id'])
+            self.assertIsNone(result['source_page'])
+            self.assertFalse(result['generation_executed'])
+            call = json.loads((args.out/'imagegen-request.json').read_text(encoding='utf-8'))
+            paths = call['arguments']['referenced_image_paths']
+            self.assertEqual(len(paths), 1)
+            self.assertEqual(pathlib.Path(paths[0]).read_bytes(), PNG)
+            self.assertIn(args.pose_description, call['arguments']['prompt'])
+
+    def test_description_without_any_images_does_not_invent_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = argparse.Namespace(pose_file=None, pose_id=None, pose_description='나무 자세', character=[],
+                                      scene='자세 설명', constraints='', out=pathlib.Path(tmp)/'prepared')
+            result = gallery.prepare(args)
+            call = json.loads((args.out/'imagegen-request.json').read_text(encoding='utf-8'))
+            self.assertNotIn('referenced_image_paths', call['arguments'])
+            self.assertEqual(result['status'], 'needs_character_reference')
+
+    def test_external_jpeg_records_actual_source_not_gallery(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            temp = pathlib.Path(tmp)
+            image = temp/'external.jpg'
+            image.write_bytes(b'\xff\xd8\xff' + b'synthetic-jpeg-fixture')
+            args = argparse.Namespace(pose_file=image, pose_id=None, pose_source='external',
+                                      source_url='https://example.org/permitted-pose', rights_note='Test permission fixture',
+                                      character=[], scene='앉은 자세', constraints='', out=temp/'prepared')
+            with patch.object(gallery, 'request_bytes') as request:
+                result = gallery.prepare(args)
+                request.assert_not_called()
+            self.assertEqual(result['reference_mode'], 'external_image')
+            self.assertEqual(result['source_page'], args.source_url)
+            self.assertEqual(result['rights_note'], args.rights_note)
+            self.assertTrue(result['pose_file'].endswith('.jpg'))
+            self.assertIsNone(result['redistribution_allowed'])
+
+    def test_missing_external_permission_and_ambiguous_inputs_preserve_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            temp = pathlib.Path(tmp)
+            image = temp/'pose.png'
+            image.write_bytes(PNG)
+            args = argparse.Namespace(pose_file=image, pose_id=None, pose_source='external',
+                                      character=[], scene='자세', constraints='', out=temp/'prepared')
+            with self.assertRaises(ValueError):
+                gallery.prepare(args)
+            self.assertFalse(args.out.exists())
+            args.pose_description = 'both an image and text'
+            with self.assertRaises(ValueError):
+                gallery.prepare(args)
+            self.assertFalse(args.out.exists())
+
+    def test_user_pose_and_description_cli_can_prepare_without_catalogue(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            temp = pathlib.Path(tmp)
+            image = temp/'pose.png'
+            image.write_bytes(PNG)
+            args = argparse.Namespace(pose_file=image, pose_id=None, pose_source='user',
+                                      character=[], scene='사용자 포즈', constraints='', out=temp/'user-pose')
+            self.assertEqual(gallery.prepare(args)['reference_mode'], 'user_image')
+            command = [sys.executable, str(SCRIPT), '--cache', str(temp/'absent.json'), 'prepare',
+                       '--pose-description', '나무 자세', '--character', str(image),
+                       '--scene', '동상 자세 편집', '--out', str(temp/'text-pose')]
+            result = subprocess.run(command, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((temp/'absent.json').exists())
+            manifest = json.loads(result.stdout.decode('utf-8'))
+            self.assertEqual(manifest['reference_mode'], 'description_only')
+
 
 if __name__ == '__main__':
     unittest.main()
