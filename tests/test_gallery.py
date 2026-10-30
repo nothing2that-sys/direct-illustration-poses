@@ -26,6 +26,14 @@ def row(image_id='example_P001_front', name='座り・頬杖'):
 
 
 class GalleryTests(unittest.TestCase):
+    def test_gallery_only_scope_and_vocabulary(self):
+        from pose_search import CONCEPTS, search_resources
+        aliases,_=search_resources()
+        self.assertEqual(aliases,{k:v[0].split('|') for k,v in CONCEPTS.items()})
+        for name in ['direct-illustration-poses','create-pose-illustration']:
+            text=(ROOT/'skills'/name/'SKILL.md').read_text('utf-8')
+            self.assertIn('전체 웹 검색이나 다른',text)
+            self.assertIn('https://ai-pose-gallery.pages.dev/',text)
     def test_registered_web_tags_are_loaded_by_exact_id(self):
         from pose_search import search_resources
         aliases,index=search_resources()
