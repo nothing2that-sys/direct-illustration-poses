@@ -1,6 +1,9 @@
 """Interpretable local retrieval over website text metadata, not image embeddings."""
 import re
 import unicodedata
+import json
+from functools import lru_cache
+from pathlib import Path
 
 # (query synonyms, source-name patterns). Emotion mappings suggest poses, not facts.
 CONCEPTS = {
@@ -56,12 +59,20 @@ ANGLE_WORDS = {'front':'정면|앞모습|frontview', 'high':'위에서|내려다
  'diag':'사선|비스듬한시점|대각|diagonal'}
 FIELDS={'posture','torso','arms','hands','legs','contact','props','action','mood','camera','uncertain','exclude','people'}
 
+@lru_cache(maxsize=1)
+def search_resources():
+    folder=Path(__file__).resolve().parents[1]/'assets'
+    aliases=json.loads((folder/'query-synonyms.json').read_text('utf-8')) if (folder/'query-synonyms.json').is_file() else {}
+    index=json.loads((folder/'verified-web-poses.json').read_text('utf-8')) if (folder/'verified-web-poses.json').is_file() else {'poses':[]}
+    return aliases,{p['id']:p for p in index['poses']}
+
 def normalize(s):
     return re.sub(r'[^\w가-힣]', '',unicodedata.normalize('NFKC',s).casefold())
 
 def detect(text):
     q=normalize(text)
-    return {k for k,(words,_) in CONCEPTS.items() if any(normalize(w) in q for w in words.split('|'))}
+    aliases,_=search_resources()
+    return {k for k,(words,_) in CONCEPTS.items() if any(normalize(w) in q for w in [*words.split('|'),*aliases.get(k,[])])}
 
 def validate_features(value):
     if not isinstance(value,dict) or set(value)-FIELDS:
@@ -93,10 +104,16 @@ def rank(rows,query,line,angle,limit,describe,lines,angles,features=None,exclude
         line='pair' if features.get('people')==2 or re.search(r'두\s*사람|2\s*인|둘이|커플|two people',query) else 'standard'
     terms=[normalize(t) for t in re.findall(r'[\w-]+',text) if len(normalize(t))>=2]
     candidates=[]
+    _,verified=search_resources()
     for row in rows:
         if row['系統']!=lines[line] or angle and row['アングル']!=angles[angle]:continue
         label=row['ポーズ名']+' '+row['分類']
         tags={k for k,(_,pattern) in CONCEPTS.items() if re.search(pattern,label)}
+        annotation=verified.get(row['id'])
+        if annotation:
+            # Only this exact web image ID receives visually checked tags.
+            tags.update(annotation['concepts'])
+            label+=' '+' '.join(annotation['observed_tags'])
         if unwanted & tags:continue
         hits=wanted & tags; missing=wanted-tags
         direct=normalize(row['id']+' '+label)
@@ -108,9 +125,11 @@ def rank(rows,query,line,angle,limit,describe,lines,angles,features=None,exclude
         score+=4*len(detect(observed)&tags)
         item=describe(row) if details else {'id':row['id'],'name':row['ポーズ名'],'angle':row['アングル']}
         item.update(score=score,matched=sorted(hits),missing=sorted(missing),
-          scene_inferences=sorted(hits & INFERRED),image_verified=False)
+          scene_inferences=sorted(hits & INFERRED),image_verified=False,
+          annotation_level=annotation['review_level'] if annotation else 'website_metadata',
+          observed_tags=annotation['observed_tags'] if annotation else [])
         candidates.append((score,row,item))
-    candidates.sort(key=lambda x:(-x[0],x[1]['id']))
+    candidates.sort(key=lambda x:(-x[0],0 if x[1]['アングル']==angles['front'] else 1,x[1]['id']))
     # One pose per result unless a specific angle was requested; show retrieves URLs.
     result=[]; seen=set()
     for _,row,item in candidates:
