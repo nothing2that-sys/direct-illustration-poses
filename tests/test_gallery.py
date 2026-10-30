@@ -26,6 +26,28 @@ def row(image_id='example_P001_front', name='座り・頬杖'):
 
 
 class GalleryTests(unittest.TestCase):
+    def test_registered_web_tags_are_loaded_by_exact_id(self):
+        from pose_search import search_resources
+        aliases,index=search_resources()
+        self.assertEqual(len(index),6)
+        self.assertTrue(aliases)
+        p=row('full_single_P012_front','座り・頬杖')
+        p['ポーズ番号']='P012'
+        r=gallery.search_rows([p], '바닥 짚고 한쪽 다리 뻗기')
+        self.assertEqual(r['results'][0]['annotation_level'],'original_observed')
+        self.assertIn('바닥손',r['results'][0]['matched'])
+        self.assertIn('다리뻗기',r['results'][0]['matched'])
+        self.assertFalse(r['results'][0]['image_verified'])
+        p['id']='full_single_P012_side'
+        r=gallery.search_rows([p],'앉기')
+        self.assertEqual(r['results'][0]['observed_tags'],[])
+
+    def test_two_skills_have_distinct_roles_and_share_search(self):
+        search=(ROOT/'skills/direct-illustration-poses/SKILL.md').read_text('utf-8')
+        create=(ROOT/'skills/create-pose-illustration/SKILL.md').read_text('utf-8')
+        self.assertIn('이 검색 스킬은 생성 도구를 직접 호출하지 않는다',search)
+        self.assertIn('<검색스킬>/scripts/gallery.py',create)
+        self.assertFalse((ROOT/'skills/create-pose-illustration/scripts/gallery.py').exists())
     def test_vague_queries_rank_posture_combinations(self):
         r=gallery.search_rows([row('a_front','前かがみ・腕をだらりと下げる'),row('b_front','座り・頬杖')], '기운 없이 축 처진')
         self.assertEqual(r['results'][0]['id'],'a_front')
@@ -125,6 +147,7 @@ class GalleryTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             installed = pathlib.Path(tmp)/'direct-illustration-poses'
             self.assertTrue((installed/'SKILL.md').is_file())
+            self.assertTrue((pathlib.Path(tmp)/'create-pose-illustration/SKILL.md').is_file())
             custom = installed/'user-note.txt'
             custom.write_text('keep', encoding='utf-8')
             retry = subprocess.run(command, capture_output=True)
