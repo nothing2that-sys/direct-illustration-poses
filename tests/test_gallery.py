@@ -156,6 +156,7 @@ class GalleryTests(unittest.TestCase):
             installed = pathlib.Path(tmp)/'direct-illustration-poses'
             self.assertTrue((installed/'SKILL.md').is_file())
             self.assertTrue((pathlib.Path(tmp)/'create-pose-illustration/SKILL.md').is_file())
+            self.assertTrue((pathlib.Path(tmp)/'fuse-pose-references/SKILL.md').is_file())
             custom = installed/'user-note.txt'
             custom.write_text('keep', encoding='utf-8')
             retry = subprocess.run(command, capture_output=True)
