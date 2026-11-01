@@ -241,6 +241,19 @@ AI Pose Gallery의 레퍼런스 2~3개를 조합해 히어로 랜딩 포즈를 �
 
 사용자도 처음에는 위 **설치 확인용 검색**으로 한 번 확인한 뒤, 캐릭터 이미지로 생성 예제를 시험하면 됩니다.
 
+## 저장소 기여 계정 제한
+
+커밋 작성자·커미터와 PR 계정은 `nothing2that-sys`만 사용합니다. 로컬 복제본마다 아래 설정을 한 번 적용하세요. 전역 Git 설정은 변경하지 않습니다.
+
+```sh
+git config --local user.name nothing2that-sys
+git config --local user.email nothing2that@gmail.com
+git config --local credential.https://github.com.username nothing2that-sys
+git config --local core.hooksPath .githooks
+```
+
+커밋 훅은 작성자와 커미터의 이름·이메일이 다르면 커밋을 중단합니다. GitHub Actions는 PR을 연 계정의 로그인과 숫자 ID를 확인하여 다른 계정의 PR을 자동으로 닫습니다. 공개 저장소에서 PR 생성 버튼 자체를 없애는 설정은 아니며, Actions가 실행되어야 자동 닫기가 적용됩니다. 로컬 훅은 복제본마다 활성화해야 하며 우회할 수 있으므로 서버의 강제 검증과 같지는 않습니다.
+
 ## 이용 범위
 
 포즈 출처는 [AI Pose Gallery](https://ai-pose-gallery.pages.dev/)입니다. 제작자와 공식 제휴한 도구는 아닙니다.

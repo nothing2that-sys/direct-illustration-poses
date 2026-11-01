@@ -1,0 +1,46 @@
+name: Owner-only pull requests
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  owner-only:
+    runs-on: ubuntu-latest
+    steps:
+      # Never check out or execute code from the pull request.
+      - name: Close pull requests from other accounts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          with open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8') as stream:
+              event = json.load(stream)
+          pr = event['pull_request']
+          author = pr['user']
+          if author['id'] == 331910699 and author['login'] == 'nothing2that-sys':
+              print('Allowed: nothing2that-sys')
+          else:
+              request = urllib.request.Request(
+                  pr['url'],
+                  data=json.dumps({'state': 'closed'}).encode(),
+                  headers={
+                      'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                      'Accept': 'application/vnd.github+json',
+                      'Content-Type': 'application/json',
+                  },
+                  method='PATCH',
+              )
+              with urllib.request.urlopen(request) as response:
+                  result = json.load(response)
+              if result['state'] != 'closed':
+                  raise RuntimeError('PR was not closed')
+              raise SystemExit('Closed: only nothing2that-sys may open pull requests here.')
+          PY

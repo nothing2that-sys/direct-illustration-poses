@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+for identity in GIT_AUTHOR_IDENT GIT_COMMITTER_IDENT; do
+    value=$(git var "$identity")
+    case "$value" in
+        'nothing2that-sys <nothing2that@gmail.com> '*) ;;
+        *) echo "Commit blocked: $identity must be nothing2that-sys <nothing2that@gmail.com>." >&2; exit 1 ;;
+    esac
+done
